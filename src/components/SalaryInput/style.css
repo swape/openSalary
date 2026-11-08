@@ -1,0 +1,19 @@
+salary-input {
+  display: block;
+}
+
+salary-input input {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid var(--color-control-border);
+  border-radius: 0.4rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  min-height: 44px;
+  height: 3rem;
+  font: inherit;
+}
+
+salary-input input:invalid {
+  border-color: var(--color-invalid);
+}

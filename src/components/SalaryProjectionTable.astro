@@ -1,0 +1,38 @@
+---
+import { formatNok, formatNumber } from '../helpers/stringsAndNumbers'
+import type { ProjectionYear } from '../types/salary'
+
+interface Props {
+  projection: ProjectionYear[]
+  salaryYear: number
+  grunnbelopYear: string
+}
+
+const { projection, salaryYear, grunnbelopYear } = Astro.props
+---
+
+<div class="table-wrap">
+  <table>
+    <caption>Scenario · ikke en offisiell lønnsprognose</caption>
+    <thead>
+      <tr>
+        <th scope="col">År</th>
+        <th scope="col">NOK/år</th>
+        <th scope="col">{salaryYear}-kroner</th>
+        <th scope="col">G ({grunnbelopYear}-sats)</th>
+        <th scope="col">Estimert SSB-trend (NOK/år)</th>
+      </tr>
+    </thead>
+    <tbody data-projection>
+      {projection.map((year) => (
+        <tr>
+          <th scope="row">{year.year}</th>
+          <td>{formatNok(year.annualNok)}</td>
+          <td>{formatNok(year.realAnnualNok)}</td>
+          <td>{formatNumber(year.grunnbelop)}</td>
+          <td>{formatNok(year.historicalTrendAnnualNok)}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,35 @@
+---
+import { formatNok } from '../helpers/stringsAndNumbers'
+import type { HistoricalSalary } from '../types/salary'
+
+interface Props {
+  history: HistoricalSalary[]
+  monthsPerYear: number
+}
+
+const { history, monthsPerYear } = Astro.props
+---
+
+<div class="table-wrap">
+  <table>
+    <caption>
+      Historisk sektormedian · nominelle kroner, uten egne tillegg
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">År</th>
+        <th scope="col">NOK/år (månedslønn x 12)</th>
+        <th scope="col">NOK/måned</th>
+      </tr>
+    </thead>
+    <tbody data-history>
+      {history.map((year) => (
+        <tr>
+          <th scope="row">{year.year}</th>
+          <td>{formatNok(year.annualNok)}</td>
+          <td>{formatNok(year.annualNok / monthsPerYear)}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,48 @@
+---
+import { formatNok, formatNumber } from '../helpers/stringsAndNumbers'
+import type { SalaryComponent } from '../types/salary'
+
+interface Props {
+  components: SalaryComponent[]
+  annualNok: number
+  pointValueNok: number
+}
+
+const { components, annualNok, pointValueNok } = Astro.props
+---
+
+<div class="table-wrap">
+  <table>
+    <caption>{`1 poeng = ${formatNok(pointValueNok)} i årslønn`}</caption>
+    <thead>
+      <tr>
+        <th scope="col">Kategori</th>
+        <th scope="col">Poeng</th>
+        <th scope="col">NOK/år</th>
+      </tr>
+    </thead>
+    <tbody data-breakdown>
+      {components.map((component) => (
+        <tr>
+          <th scope="row">
+            {component.label}
+            <small>
+              {component.evidence === 'ssb'
+                ? 'SSB-sammenligning'
+                : 'Egne antakelser'}
+            </small>
+          </th>
+          <td>{formatNumber(component.points)}</td>
+          <td>{formatNok(component.annualNok)}</td>
+        </tr>
+      ))}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row">Totalt</th>
+        <td data-total-points>{formatNumber(annualNok / pointValueNok)}</td>
+        <td data-total>{formatNok(annualNok)}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>

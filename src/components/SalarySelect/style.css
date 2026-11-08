@@ -1,0 +1,31 @@
+salary-select {
+  display: block;
+}
+
+.select-control {
+  position: relative;
+}
+
+salary-select select {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid var(--color-control-border);
+  border-radius: 0.4rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  min-height: 44px;
+  height: 3rem;
+  font: inherit;
+  appearance: none;
+  padding-right: 3rem;
+}
+
+.select-arrow {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  color: var(--color-text-subtle);
+  font-size: 1.5rem;
+  pointer-events: none;
+  transform: translateY(-50%);
+}

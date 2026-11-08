@@ -1,0 +1,97 @@
+---
+import './style.css'
+
+type InputType =
+  'date' | 'email' | 'number' | 'range' | 'search' | 'tel' | 'text' | 'url'
+
+interface Props {
+  name: string
+  label: string
+  type: InputType
+  value: string | number
+  changeAction: 'calculate-salary'
+  min?: number | string
+  max?: number | string
+  step?: number | string
+  describedBy?: string
+  required?: boolean
+  disabled?: boolean
+}
+
+const {
+  name,
+  label,
+  type,
+  value,
+  changeAction,
+  min,
+  max,
+  step,
+  describedBy,
+  required = false,
+  disabled = false,
+} = Astro.props
+const id = `input-${name}`
+---
+
+<salary-input change-action={changeAction}>
+  <div class="input-field">
+    <label for={id}>{label}</label>
+    <input
+      id={id}
+      name={name}
+      type={type}
+      value={value}
+      min={min}
+      max={max}
+      step={step}
+      aria-describedby={describedBy}
+      required={required}
+      disabled={disabled}
+    />
+  </div>
+</salary-input>
+
+<script>
+  import type { ControlChangeDetail } from '../../types/control'
+
+  class SalaryInput extends HTMLElement {
+    private listeners?: AbortController
+
+    connectedCallback() {
+      const input = this.querySelector('input')
+      if (!input || this.getAttribute('change-action') !== 'calculate-salary') {
+        throw new Error(
+          'salary-input requires an input and valid change-action.'
+        )
+      }
+
+      this.listeners?.abort()
+      this.listeners = new AbortController()
+      input.addEventListener(
+        'input',
+        () => {
+          this.dispatchEvent(
+            new CustomEvent<ControlChangeDetail>('salary-control-change', {
+              bubbles: true,
+              detail: {
+                action: 'calculate-salary',
+                name: input.name,
+                value: input.value,
+              },
+            })
+          )
+        },
+        { signal: this.listeners.signal }
+      )
+    }
+
+    disconnectedCallback() {
+      this.listeners?.abort()
+    }
+  }
+
+  if (!customElements.get('salary-input')) {
+    customElements.define('salary-input', SalaryInput)
+  }
+</script>

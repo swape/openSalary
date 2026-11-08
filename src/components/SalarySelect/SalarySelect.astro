@@ -1,0 +1,84 @@
+---
+import type { SelectChangeAction, SelectOption } from '../../types/select'
+import './style.css'
+
+interface Props {
+  name: string
+  label: string
+  options: SelectOption[]
+  value: string
+  changeAction: SelectChangeAction
+  describedBy?: string
+  required?: boolean
+  disabled?: boolean
+}
+
+const { name, label, options, value, changeAction, describedBy, required = false, disabled = false } = Astro.props
+const id = `select-${name}`
+---
+
+<salary-select change-action={changeAction}>
+  <div class="select-field">
+    <label for={id}>{label}</label>
+    <div class="select-control">
+      <select id={id} name={name} aria-describedby={describedBy} required={required} disabled={disabled}>
+        {options.map((option) => (
+          <option value={option.value} selected={option.value === value} disabled={option.disabled}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <span class="select-arrow material-symbols-rounded" aria-hidden="true">
+        keyboard_arrow_down
+      </span>
+    </div>
+  </div>
+</salary-select>
+
+<script>
+  import type { ControlChangeDetail } from '../../types/control'
+  import type { SelectChangeAction } from '../../types/select'
+
+  function isSelectChangeAction(value: string | null): value is SelectChangeAction {
+    return value === 'calculate-salary' || value === 'change-chart-period'
+  }
+
+  class SalarySelect extends HTMLElement {
+    private listeners?: AbortController
+
+    connectedCallback() {
+      const select = this.querySelector('select')
+      const action = this.getAttribute('change-action')
+      if (!select || !isSelectChangeAction(action)) {
+        throw new Error('salary-select requires a select and valid change-action.')
+      }
+
+      this.listeners?.abort()
+      this.listeners = new AbortController()
+      select.addEventListener(
+        'change',
+        () => {
+          this.dispatchEvent(
+            new CustomEvent<ControlChangeDetail>('salary-control-change', {
+              bubbles: true,
+              detail: {
+                action,
+                name: select.name,
+                value: select.value,
+              },
+            })
+          )
+        },
+        { signal: this.listeners.signal }
+      )
+    }
+
+    disconnectedCallback() {
+      this.listeners?.abort()
+    }
+  }
+
+  if (!customElements.get('salary-select')) {
+    customElements.define('salary-select', SalarySelect)
+  }
+</script>

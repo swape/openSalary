@@ -1,0 +1,17 @@
+salary-checkbox {
+  display: block;
+}
+
+salary-checkbox .checkbox {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 400;
+}
+
+salary-checkbox input[type='checkbox'] {
+  width: 1.2rem;
+  height: 1.2rem;
+  accent-color: var(--color-primary);
+}

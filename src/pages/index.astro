@@ -1,19 +1,642 @@
 ---
+import NormalLayout from '../layout/NormalLayout.astro'
+import MethodologyPanel from '../components/MethodologyPanel.astro'
+import SalarySelect from '../components/SalarySelect/SalarySelect.astro'
+import SalaryCheckbox from '../components/SalaryCheckbox/SalaryCheckbox.astro'
+import SalaryInput from '../components/SalaryInput/SalaryInput.astro'
+import SiteHeader from '../components/SiteHeader.astro'
+import SiteFooter from '../components/SiteFooter.astro'
+import SalaryBreakdownTable from '../components/SalaryBreakdownTable.astro'
+import SalaryHistoryTable from '../components/SalaryHistoryTable.astro'
+import SalaryProjectionTable from '../components/SalaryProjectionTable.astro'
+import CalculatorTabs from '../components/CalculatorTabs.astro'
+import { salaryConfig, snapshot } from '../config/salary'
+import { calculateSalary } from '../helpers/calculator'
+import { formatNok, formatNumber } from '../helpers/stringsAndNumbers'
+
 const title = 'openSalary'
+const description = 'Åpen lønnskalkulator for IT i Norge: SSB-referanser, transparente poeng og lønnsutvikling i NOK og G.'
+const initial = calculateSalary({ ...salaryConfig.defaults, skills: [] })
+const grunnbelopDate = new Intl.DateTimeFormat('nb-NO', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+}).format(new Date(salaryConfig.grunnbelop.effectiveDate))
+const grunnbelopYear = salaryConfig.grunnbelop.effectiveDate.slice(0, 4)
+const chartPeriodOptions = [
+  { value: 'all', label: 'Historikk og fremtid' },
+  { value: 'history', label: 'Bare historikk' },
+  { value: 'future', label: 'Bare fremtid' },
+]
 ---
 
-<!doctype html>
-<html lang="no">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="description" content="En åpen lønnskalkulator for Norge." />
-    <title>{title}</title>
-  </head>
-  <body>
-    <main>
-      <h1>{title}</h1>
-      <p>En åpen lønnskalkulator for Norge.</p>
-    </main>
-  </body>
-</html>
+<NormalLayout title={title} description={description}>
+  <main>
+    <SiteHeader title={title} />
+
+    <CalculatorTabs>
+      <div slot="calculator">
+        <salary-calculator>
+          <div class="calculator-layout">
+            <section class="panel" aria-labelledby="profile-title">
+              <h2 id="profile-title">Din profil</h2>
+              <form>
+                <div class="fields">
+                  <SalarySelect
+                    name="role"
+                    label="Rolle"
+                    options={salaryConfig.roles.map((role) => ({
+                      value: role.id,
+                      label: role.label,
+                    }))}
+                    value={salaryConfig.defaults.role}
+                    changeAction="calculate-salary"
+                  />
+                  <SalarySelect
+                    name="careerLevel"
+                    label="Karrierenivå"
+                    options={salaryConfig.careerLevels.map((level) => ({
+                      value: level.id,
+                      label: level.label,
+                    }))}
+                    value={salaryConfig.defaults.careerLevel}
+                    describedBy="career-help"
+                    changeAction="calculate-salary"
+                  />
+                  <p id="career-help" class="hint">
+                    Junior er utgangspunktet med 0 nivåpoeng. Hvert nivå over Junior gir som standard {salaryConfig.defaults.careerPointsPerLevel}
+                    poeng ekstra. Juster poeng per nivå under Egne poengtillegg.
+                  </p>
+                  <SalarySelect
+                    name="sector"
+                    label="Sektor"
+                    options={salaryConfig.sectors.map((sector) => ({
+                      value: sector.id,
+                      label: sector.label,
+                    }))}
+                    value={salaryConfig.defaults.sector}
+                    describedBy="sector-help"
+                    changeAction="calculate-salary"
+                  />
+                  <p id="sector-help" class="hint">
+                    Offentlig sektor vises separat for stat og kommune, ikke som et gjennomsnitt av medianene.
+                  </p>
+                  <SalaryInput
+                    name="experienceYears"
+                    label="Relevant erfaring (år)"
+                    type="number"
+                    min={0}
+                    max={salaryConfig.maxExperienceYears}
+                    step={1}
+                    required
+                    value={salaryConfig.defaults.experienceYears}
+                    changeAction="calculate-salary"
+                  />
+                  <SalarySelect
+                    name="education"
+                    label="Utdanning"
+                    options={salaryConfig.education.map((education) => ({
+                      value: education.id,
+                      label: education.label,
+                    }))}
+                    value={salaryConfig.defaults.education}
+                    changeAction="calculate-salary"
+                  />
+                </div>
+                <fieldset>
+                  <legend>Kompetanser og sertifiseringer</legend>
+                  {salaryConfig.skills.map((skill) => (
+                    <SalaryCheckbox name="skills" value={skill.id} label={skill.label} changeAction="calculate-salary" />
+                  ))}
+                </fieldset>
+
+                <details>
+                  <summary>Egne poengtillegg</summary>
+                  <p class="hint" id="premium-help">
+                    Standardtillegg er {salaryConfig.defaults.experiencePointsPerYear}
+                    poeng per erfaringsår, {salaryConfig.defaults.educationPremiumPoints}
+                    poeng for valgt utdanning og {salaryConfig.defaults.skillPremiumPoints}
+                    poeng per valgt kompetanse. SSB-tabellen dokumenterer ikke egne premier for karrierenivå, erfaring, utdanning eller kompetanser. Verdier du setter her er dine
+                    scenarioantakelser, ikke SSB-fakta. 1 poeng = {formatNok(salaryConfig.pointValueNok)} per år.
+                  </p>
+                  <div class="fields">
+                    <SalaryInput
+                      name="careerPointsPerLevel"
+                      label="Poeng per karrierenivå"
+                      type="number"
+                      min={0}
+                      max={salaryConfig.maxPremiumPoints}
+                      step="0.1"
+                      required
+                      describedBy="premium-help career-help"
+                      value={salaryConfig.defaults.careerPointsPerLevel}
+                      changeAction="calculate-salary"
+                    />
+                    <SalaryInput
+                      name="experiencePointsPerYear"
+                      label="Poeng per erfaringsår"
+                      type="number"
+                      min={0}
+                      max={salaryConfig.maxPremiumPoints}
+                      step="0.1"
+                      required
+                      describedBy="premium-help"
+                      value={salaryConfig.defaults.experiencePointsPerYear}
+                      changeAction="calculate-salary"
+                    />
+                    <SalaryInput
+                      name="educationPremiumPoints"
+                      label="Tillegg for valgt utdanning (poeng)"
+                      type="number"
+                      min={0}
+                      max={salaryConfig.maxPremiumPoints}
+                      step="0.1"
+                      required
+                      describedBy="premium-help education-help"
+                      value={salaryConfig.defaults.educationPremiumPoints}
+                      changeAction="calculate-salary"
+                    />
+                    <p class="hint" id="education-help">
+                      Tillegget gjelder valgt grad, ikke summen av tidligere grader. Ingen høyere utdanning gir 0 utdanningspoeng.
+                    </p>
+                    <SalaryInput
+                      name="skillPremiumPoints"
+                      label="Tillegg per valgt kompetanse (poeng)"
+                      type="number"
+                      min={0}
+                      max={salaryConfig.maxPremiumPoints}
+                      step="0.1"
+                      required
+                      describedBy="premium-help"
+                      value={salaryConfig.defaults.skillPremiumPoints}
+                      changeAction="calculate-salary"
+                    />
+                  </div>
+                </details>
+
+                <h3>Fremtidsscenario</h3>
+                <div class="fields">
+                  <SalaryInput
+                    name="inflationPercent"
+                    label="Årlig KPI i scenarioet (%)"
+                    type="number"
+                    min={salaryConfig.inflationRange.min}
+                    max={salaryConfig.inflationRange.max}
+                    step="0.1"
+                    required
+                    describedBy="inflation-help"
+                    value={salaryConfig.defaults.inflationPercent}
+                    changeAction="calculate-salary"
+                  />
+                  <p class="hint" id="inflation-help">
+                    Standardverdien {formatNumber(snapshot.cpi.annualChangePercent)} % er SSBs årsvekst i KPI for {snapshot.cpi.year}, gjentatt som en antakelse for fremtidige år.
+                    Det er ikke en offisiell prognose. KPI betyr konsumprisindeks, et mål på prisvekst.
+                  </p>
+                  <SalaryInput
+                    name="projectionYears"
+                    label="Antall fremtidige år"
+                    type="number"
+                    min={1}
+                    max={salaryConfig.maxProjectionYears}
+                    step={1}
+                    required
+                    value={salaryConfig.defaults.projectionYears}
+                    changeAction="calculate-salary"
+                  />
+                </div>
+                <button type="submit">Beregn lønn</button>
+                <p class="hint">Resultatet oppdateres også når du endrer profilen.</p>
+              </form>
+              <p data-error role="alert" hidden></p>
+            </section>
+
+            <section class="panel results" data-results aria-labelledby="result-title">
+              <p class="eyebrow">Lønnsreferanse + egne scenarioantakelser</p>
+              <h2 id="result-title">Årslønn · {initial.year}-nivå</h2>
+              <p class="salary" data-annual>
+                {formatNok(initial.annualNok)}
+              </p>
+              <p class="secondary-result">
+                <span data-monthly>{formatNok(initial.monthlyNok)}</span> per måned · <span data-g>{formatNumber(initial.grunnbelop)} G</span>
+              </p>
+              <p class="hint">
+                G er grunnbeløpet i folketrygden. Her brukes {formatNok(salaryConfig.grunnbelop.annualNok)} fra {grunnbelopDate}, også for fremtidige år. G-verdier er ikke en
+                prognose for fremtidig G.
+              </p>
+              <p data-benchmark class="source-note">
+                SSB-referanse: {initial.occupationLabel} ({initial.occupationCode}
+                ).
+              </p>
+              <h3>Slik er beløpet bygget opp</h3>
+              <SalaryBreakdownTable components={initial.components} annualNok={initial.annualNok} pointValueNok={salaryConfig.pointValueNok} />
+              <p class="hint">Med 0 i egne tillegg er resultatet kun SSB-referansen. Medianen er ikke en startlønn eller en garanti for din lønn.</p>
+              <p class="visually-hidden" data-announcement role="status" aria-live="polite" aria-atomic="true"></p>
+            </section>
+          </div>
+
+          <section class="panel growth" data-growth aria-labelledby="growth-title">
+            <h2 id="growth-title">Lønnshistorikk og fremtidsscenario</h2>
+            <p data-history-summary></p>
+            <p data-growth-summary></p>
+            <div data-chart hidden>
+              <fieldset class="chart-filters">
+                <legend>Vis lønnsserier</legend>
+                <SalaryCheckbox name="chartSeries" value="history" label="SSB-historikk (blå)" changeAction="toggle-chart-series" seriesIndex={0} checked />
+                <SalaryCheckbox name="chartSeries" value="trend" label="Estimert SSB-trend (blå stiplet)" changeAction="toggle-chart-series" seriesIndex={1} checked />
+                <SalaryCheckbox name="chartSeries" value="scenario" label="Ditt scenario (grønn)" changeAction="toggle-chart-series" seriesIndex={2} checked />
+                <SalaryCheckbox name="chartSeries" value="real" label="Reallønn (brun stiplet)" changeAction="toggle-chart-series" seriesIndex={3} checked />
+              </fieldset>
+              <div class="chart-controls">
+                <SalarySelect name="chartPeriod" label="Vis år" options={chartPeriodOptions} value="all" changeAction="change-chart-period" />
+                <button type="button" data-zoom-in aria-label="Zoom inn" title="Zoom inn">
+                  <span class="material-symbols-rounded" aria-hidden="true">
+                    zoom_in
+                  </span>
+                </button>
+                <button type="button" data-zoom-out aria-label="Zoom ut" title="Zoom ut">
+                  <span class="material-symbols-rounded" aria-hidden="true">
+                    zoom_out
+                  </span>
+                </button>
+                <button type="button" data-zoom-reset aria-label="Tilbakestill zoom" title="Tilbakestill zoom">
+                  <span class="material-symbols-rounded" aria-hidden="true">
+                    restart_alt
+                  </span>
+                </button>
+              </div>
+              <p class="hint" id="chart-help">
+                År på vannrett akse, NOK/år på loddrett akse. Bruk knappene, Ctrl + rullehjul eller knip med to fingre for å zoome. Hold Ctrl og dra for å flytte utsnittet.
+                Filtrene endrer bare grafen; tabellene nedenfor viser alle verdier. Profilendringer tilbakestiller zoom, men beholder filtrene.
+              </p>
+              <p class="hint" data-chart-range role="status" aria-live="polite"></p>
+              <div class="chart-canvas">
+                <canvas data-salary-chart role="img" aria-label="Årslønn over tid: SSB-historikk, estimert trend og egne scenarioer" aria-describedby="chart-help">
+                  Se lønnsverdiene i tabellene nedenfor.
+                </canvas>
+              </div>
+            </div>
+            <p class="hint">
+              SSB-trenden bruker gjennomsnittlig årlig sammensatt vekst fra første til siste år i tiårsserien: (siste lønn / første lønn)<sup>1/9</sup> - 1. Ti årsverdier gir ni
+              vekstintervaller. Estimatet starter på siste SSB-referanse, uten egne poengtillegg eller ekstra KPI: den historiske lønnsveksten inkluderer allerede prisvekst. Dette
+              er ikke en offisiell SSB-prognose eller lønnsutviklingen til én person.
+            </p>
+            <p class="hint">
+              Ett ekstra erfaringsår legges til hvert år, opp til {salaryConfig.maxExperienceYears} år. Hele beløpet, inkludert nye erfaringspoeng, justeres med scenarioets KPI
+              fra&nbsp;
+              {snapshot.salary.year}. Karrierenivå, utdanning og kompetanser holdes uendret. Ingen fremtidige SSB-lønninger eller G-satser er kjent her.
+            </p>
+            <details>
+              <summary>Se siste 10 SSB-år i tabell</summary>
+              <SalaryHistoryTable history={initial.history} monthsPerYear={salaryConfig.monthsPerYear} />
+            </details>
+            <details>
+              <summary>Se alle år i tabell</summary>
+              <SalaryProjectionTable projection={initial.projection} salaryYear={snapshot.salary.year} grunnbelopYear={grunnbelopYear} />
+            </details>
+          </section>
+        </salary-calculator>
+      </div>
+
+      <div slot="methodology">
+        <MethodologyPanel salaryConfig={salaryConfig} snapshot={snapshot} />
+      </div>
+    </CalculatorTabs>
+    <SiteFooter />
+  </main>
+
+  <script>
+    import { Chart, LineController, LineElement, PointElement, LinearScale, Tooltip, type ScatterDataPoint } from 'chart.js'
+    import zoomPlugin from 'chartjs-plugin-zoom'
+    import { salaryConfig } from '../config/salary'
+    import { calculateSalary } from '../helpers/calculator'
+    import { formatNok, formatNumber } from '../helpers/stringsAndNumbers'
+    import type { ControlChangeDetail } from '../types/control'
+    import type { SalaryInput, SalaryResult } from '../types/salary'
+
+    Chart.register(LineController, LineElement, PointElement, LinearScale, Tooltip, zoomPlugin)
+
+    class SalaryCalculator extends HTMLElement {
+      chart?: Chart<'line', ScatterDataPoint[]>
+      private listeners?: AbortController
+      private currentResult?: SalaryResult
+
+      connectedCallback() {
+        const form = this.querySelector('form')
+        if (!form) {
+          throw new Error('Kalkulatorskjemaet mangler.')
+        }
+        this.listeners = new AbortController()
+        const options = { signal: this.listeners.signal }
+        this.addEventListener(
+          'salary-control-change',
+          (event) => {
+            const detail = (event as CustomEvent<ControlChangeDetail>).detail
+            const { action } = detail
+            if (action === 'calculate-salary') {
+              this.update(form)
+              return
+            }
+            if (action === 'change-chart-period') {
+              if (!this.currentResult) {
+                throw new Error('Lønnsresultatet mangler.')
+              }
+              this.renderChart(this.currentResult)
+              return
+            }
+            if (detail.checked === undefined || detail.seriesIndex === undefined) {
+              throw new Error('Lønnsseriens visningsstatus mangler.')
+            }
+            const chart = this.requireChart()
+            chart.setDatasetVisibility(detail.seriesIndex, detail.checked)
+            chart.update('none')
+          },
+          options
+        )
+        form.addEventListener(
+          'submit',
+          (event) => {
+            event.preventDefault()
+            this.update(form)
+          },
+          options
+        )
+        this.element('[data-zoom-in]').addEventListener(
+          'click',
+          () => {
+            this.requireChart().zoom(1.2)
+            this.renderChartRange()
+          },
+          options
+        )
+        this.element('[data-zoom-out]').addEventListener(
+          'click',
+          () => {
+            this.requireChart().zoom(0.8)
+            this.renderChartRange()
+          },
+          options
+        )
+        this.element('[data-zoom-reset]').addEventListener(
+          'click',
+          () => {
+            this.requireChart().resetZoom()
+            this.renderChartRange()
+          },
+          options
+        )
+        this.update(form)
+      }
+
+      disconnectedCallback() {
+        this.listeners?.abort()
+        this.chart?.destroy()
+        this.chart = undefined
+      }
+
+      requireChart() {
+        if (!this.chart) {
+          throw new Error('Lønnsgrafen mangler.')
+        }
+        return this.chart
+      }
+
+      renderChartRange() {
+        const { min, max } = this.requireChart().scales.x
+        this.element('[data-chart-range]').textContent = `Viser år ${formatNumber(min, 1)}-${formatNumber(max, 1)}.`
+      }
+
+      element<T extends Element = HTMLElement>(selector: string): T {
+        const element = this.querySelector<T>(selector)
+        if (!element) {
+          throw new Error(`Kalkulatorelement mangler: ${selector}`)
+        }
+        return element
+      }
+
+      readInput(form: HTMLFormElement): SalaryInput {
+        const data = new FormData(form)
+        const role = salaryConfig.roles.find((option) => option.id === data.get('role'))
+        const careerLevel = salaryConfig.careerLevels.find((option) => option.id === data.get('careerLevel'))
+        const sector = salaryConfig.sectors.find((option) => option.id === data.get('sector'))
+        const education = salaryConfig.education.find((option) => option.id === data.get('education'))
+        if (!role || !careerLevel || !sector || !education) {
+          throw new Error('Velg gyldig rolle, karrierenivå, sektor og utdanning.')
+        }
+        const skills = data.getAll('skills').map((id) => {
+          const skill = salaryConfig.skills.find((option) => option.id === id)
+          if (!skill) {
+            throw new Error('Velg en gyldig kompetanse.')
+          }
+          return skill.id
+        })
+        const readNumber = (name: string) => {
+          const value = data.get(name)
+          if (typeof value !== 'string' || value.trim() === '') {
+            throw new Error('Fyll ut alle tallfeltene.')
+          }
+          return Number(value)
+        }
+        return {
+          role: role.id,
+          careerLevel: careerLevel.id,
+          careerPointsPerLevel: readNumber('careerPointsPerLevel'),
+          sector: sector.id,
+          education: education.id,
+          skills,
+          experienceYears: readNumber('experienceYears'),
+          experiencePointsPerYear: readNumber('experiencePointsPerYear'),
+          educationPremiumPoints: readNumber('educationPremiumPoints'),
+          skillPremiumPoints: readNumber('skillPremiumPoints'),
+          inflationPercent: readNumber('inflationPercent'),
+          projectionYears: readNumber('projectionYears'),
+        }
+      }
+
+      update(form: HTMLFormElement) {
+        const error = this.element('[data-error]')
+        const results = this.element('[data-results]')
+        const growth = this.element('[data-growth]')
+        try {
+          const input = this.readInput(form)
+          const result = calculateSalary(input)
+          if (!form.checkValidity()) {
+            throw new Error('Kontroller tallfeltene: bruk verdier innenfor de angitte grensene og gyldige steg.')
+          }
+          results.hidden = false
+          growth.hidden = false
+          this.render(result)
+          error.hidden = true
+          error.textContent = ''
+          results.hidden = false
+          growth.hidden = false
+        } catch (cause) {
+          error.textContent = cause instanceof Error ? cause.message : 'Beregningen mislyktes.'
+          error.hidden = false
+          results.hidden = true
+          growth.hidden = true
+        }
+      }
+
+      render(result: SalaryResult) {
+        this.element('[data-annual]').textContent = formatNok(result.annualNok)
+        this.element('[data-monthly]').textContent = formatNok(result.monthlyNok)
+        this.element('[data-g]').textContent = `${formatNumber(result.grunnbelop)} G`
+        this.element('[data-total]').textContent = formatNok(result.annualNok)
+        this.element('[data-total-points]').textContent = formatNumber(result.annualNok / salaryConfig.pointValueNok)
+        let benchmark = `SSB-referanse: ${result.occupationLabel} (${result.occupationCode}). `
+        if (result.usesPublicBenchmark) {
+          benchmark += 'Bred offentlig IT-referanse, ikke rollespesifikk lønn. Detaljerte yrkestall er ikke publisert.'
+        } else {
+          benchmark += 'Rollen er tilordnet et SSB-yrke som en tilnærming.'
+        }
+        this.element('[data-benchmark]').textContent = benchmark
+        this.element('[data-breakdown]').replaceChildren(
+          ...result.components.map((component) => {
+            const row = this.row([component.label, formatNumber(component.points), formatNok(component.annualNok)])
+            const evidence = document.createElement('small')
+            evidence.textContent = component.evidence === 'ssb' ? 'SSB-sammenligning' : 'Egne antakelser'
+            row.cells[0].append(evidence)
+            return row
+          })
+        )
+        this.element('[data-projection]').replaceChildren(
+          ...result.projection.map((year) =>
+            this.row([String(year.year), formatNok(year.annualNok), formatNok(year.realAnnualNok), formatNumber(year.grunnbelop), formatNok(year.historicalTrendAnnualNok)])
+          )
+        )
+        this.element('[data-history]').replaceChildren(
+          ...result.history.map((year) => this.row([String(year.year), formatNok(year.annualNok), formatNok(year.annualNok / salaryConfig.monthsPerYear)]))
+        )
+        this.element('[data-history-summary]').textContent =
+          `${result.occupationLabel} (${result.occupationCode}) · valgt sektor, ${result.history[0].year}-${result.year}: ${formatNumber(result.historicalGrowthPercent, 2)} % årlig sammensatt lønnsvekst. ${result.usesPublicBenchmark ? 'Bred offentlig IT-referanse, ikke rollespesifikke tall.' : 'Samme tilnærmede SSB-yrke som lønnsberegningen.'}`
+        const last = result.projection[result.projection.length - 1]
+        this.element('[data-growth-summary]').textContent =
+          `I ${last.year}: ${formatNok(last.annualNok)} per år, tilsvarende ${formatNok(last.realAnnualNok)} i ${result.year}-kroner.`
+        this.element('[data-announcement]').textContent = `Beregnet årslønn: ${formatNok(result.annualNok)} i ${result.year}-nivå.`
+        this.renderChart(result)
+      }
+
+      row(values: string[]) {
+        const row = document.createElement('tr')
+        values.forEach((value, index) => {
+          const cell = document.createElement(index === 0 ? 'th' : 'td')
+          if (cell instanceof HTMLTableCellElement && index === 0) {
+            cell.scope = 'row'
+          }
+          cell.textContent = value
+          row.append(cell)
+        })
+        return row
+      }
+
+      renderChart(result: SalaryResult) {
+        this.currentResult = result
+        this.element('[data-chart]').hidden = false
+        this.chart?.destroy()
+        this.chart = undefined
+        const firstYear = result.history[0].year
+        const lastYear = result.projection[result.projection.length - 1].year
+        const period = this.element<HTMLSelectElement>('select[name="chartPeriod"]').value
+        const min = period === 'future' ? result.year : firstYear
+        const max = period === 'history' ? result.year : lastYear
+        const filters = [...this.querySelectorAll<HTMLInputElement>('[data-series]')]
+        const colors = getComputedStyle(document.documentElement)
+        const chartColor = (name: string) => colors.getPropertyValue(name).trim()
+        this.chart = new Chart(this.element<HTMLCanvasElement>('[data-salary-chart]'), {
+          type: 'line',
+          data: {
+            datasets: [
+              {
+                label: 'SSB-historikk',
+                borderColor: chartColor('--color-chart-history'),
+                data: result.history.map((year) => ({
+                  x: year.year,
+                  y: year.annualNok,
+                })),
+              },
+              {
+                label: 'Estimert SSB-trend',
+                borderColor: chartColor('--color-chart-trend'),
+                borderDash: [3, 5],
+                data: result.projection.map((year) => ({
+                  x: year.year,
+                  y: year.historicalTrendAnnualNok,
+                })),
+              },
+              {
+                label: 'Ditt scenario',
+                borderColor: chartColor('--color-chart-scenario'),
+                data: result.projection.map((year) => ({
+                  x: year.year,
+                  y: year.annualNok,
+                })),
+              },
+              {
+                label: `Reallønn (${result.year}-kroner)`,
+                borderColor: chartColor('--color-chart-real'),
+                borderDash: [7, 5],
+                data: result.projection.map((year) => ({
+                  x: year.year,
+                  y: year.realAnnualNok,
+                })),
+              },
+            ].map((dataset, index) => ({
+              ...dataset,
+              hidden: !filters[index].checked,
+              borderWidth: 3,
+              pointRadius: 2,
+              pointHoverRadius: 5,
+            })),
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            interaction: { mode: 'nearest', intersect: false },
+            scales: {
+              x: {
+                type: 'linear',
+                min,
+                max,
+                title: { display: true, text: 'År' },
+                ticks: { precision: 0, callback: (value) => String(value) },
+              },
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: 'NOK/år' },
+                ticks: { callback: (value) => formatNumber(Number(value), 0) },
+              },
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  title: (items) => String(items[0].parsed.x),
+                  label: (item) => `${item.dataset.label}: ${item.parsed.y === null ? 'Mangler lønnsverdi' : formatNok(item.parsed.y)}`,
+                },
+              },
+              zoom: {
+                limits: { x: { min, max, minRange: 1 } },
+                pan: {
+                  enabled: true,
+                  mode: 'x',
+                  modifierKey: 'ctrl',
+                  onPanComplete: () => this.renderChartRange(),
+                },
+                zoom: {
+                  mode: 'x',
+                  wheel: { enabled: true, modifierKey: 'ctrl' },
+                  pinch: { enabled: true },
+                  onZoomComplete: () => this.renderChartRange(),
+                },
+              },
+            },
+          },
+        })
+        this.renderChartRange()
+      }
+    }
+
+    customElements.define('salary-calculator', SalaryCalculator)
+  </script>
+</NormalLayout>

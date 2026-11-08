@@ -1,0 +1,17 @@
+---
+interface Props {
+  title: string
+}
+
+const { title } = Astro.props
+---
+
+<header>
+  <p class="eyebrow">IT i Norge · åpne tall, tydelige antakelser</p>
+  <h1>{title}</h1>
+  <p>En åpen lønnskalkulator for Norge.</p>
+  <p class="intro">
+    Finn en lønnsreferanse for rollen din, og utforsk egne tillegg og fremtidig
+    lønnsutvikling. Alle beløp er brutto, før skatt.
+  </p>
+</header>

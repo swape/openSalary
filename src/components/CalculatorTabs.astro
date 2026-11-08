@@ -1,0 +1,129 @@
+<calculator-tabs>
+  <div class="tabs-list" role="tablist" aria-label="Innhold">
+    <button type="button" id="calculator-tab" role="tab" aria-controls="calculator-panel" aria-selected="true" tabindex="0">
+      Kalkulator
+    </button>
+    <button type="button" id="methodology-tab" role="tab" aria-controls="methodology-panel" aria-selected="false" tabindex="-1">
+      Metodikk
+    </button>
+  </div>
+
+  <section id="calculator-panel" role="tabpanel" aria-labelledby="calculator-tab" tabindex="0">
+    <slot name="calculator" />
+  </section>
+  <section id="methodology-panel" role="tabpanel" aria-labelledby="methodology-tab" tabindex="0" hidden>
+    <slot name="methodology" />
+  </section>
+</calculator-tabs>
+
+<script>
+  class CalculatorTabs extends HTMLElement {
+    private listeners?: AbortController
+
+    connectedCallback() {
+      const tabs = [...this.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
+      const panels = [...this.querySelectorAll<HTMLElement>('[role="tabpanel"]')]
+      if (tabs.length === 0 || tabs.length !== panels.length) {
+        throw new Error('Calculator tabs require matching tabs and panels.')
+      }
+
+      this.listeners?.abort()
+      this.listeners = new AbortController()
+      const options = { signal: this.listeners.signal }
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => this.activateTab(index, tabs, panels), options)
+        tab.addEventListener(
+          'keydown',
+          (event) => {
+            const nextIndex = this.nextTabIndex(event.key, index, tabs.length)
+            if (nextIndex === undefined) {
+              return
+            }
+            event.preventDefault()
+            tabs[nextIndex].focus()
+            this.activateTab(nextIndex, tabs, panels)
+          },
+          options
+        )
+      })
+
+      const selectedIndex = tabs.findIndex((tab) => tab.getAttribute('aria-selected') === 'true')
+      this.activateTab(Math.max(selectedIndex, 0), tabs, panels)
+    }
+
+    disconnectedCallback() {
+      this.listeners?.abort()
+    }
+
+    private nextTabIndex(key: string, currentIndex: number, tabCount: number): number | undefined {
+      if (key === 'ArrowRight') {
+        return (currentIndex + 1) % tabCount
+      }
+      if (key === 'ArrowLeft') {
+        return (currentIndex - 1 + tabCount) % tabCount
+      }
+      if (key === 'Home') {
+        return 0
+      }
+      if (key === 'End') {
+        return tabCount - 1
+      }
+      return undefined
+    }
+
+    private activateTab(activeIndex: number, tabs: HTMLButtonElement[], panels: HTMLElement[]) {
+      tabs.forEach((tab, index) => {
+        const isActive = index === activeIndex
+        tab.setAttribute('aria-selected', String(isActive))
+        tab.tabIndex = isActive ? 0 : -1
+        panels[index].hidden = !isActive
+      })
+    }
+  }
+
+  if (!customElements.get('calculator-tabs')) {
+    customElements.define('calculator-tabs', CalculatorTabs)
+  }
+</script>
+
+<style>
+  calculator-tabs {
+    display: block;
+  }
+
+  .tabs-list {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .tabs-list button[role='tab'] {
+    width: auto;
+    min-width: 7rem;
+    margin: 0 0 -1px;
+    padding: 0.65rem 1rem;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    border-radius: 0.25rem 0.25rem 0 0;
+    background: transparent;
+    color: var(--color-text-subtle);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .tabs-list button[role='tab']:hover {
+    background: var(--color-source-background);
+    color: var(--color-primary);
+  }
+
+  .tabs-list button[role='tab'][aria-selected='true'] {
+    border-bottom-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  [role='tabpanel'] {
+    min-width: 0;
+  }
+</style>

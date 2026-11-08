@@ -1,0 +1,106 @@
+---
+import type { CheckboxChangeAction } from '../../types/control'
+import './style.css'
+
+interface Props {
+  name: string
+  value: string
+  label: string
+  changeAction: CheckboxChangeAction
+  checked?: boolean
+  disabled?: boolean
+  seriesIndex?: number
+}
+
+const {
+  name,
+  value,
+  label,
+  changeAction,
+  checked = false,
+  disabled = false,
+  seriesIndex,
+} = Astro.props
+---
+
+<salary-checkbox change-action={changeAction} series-index={seriesIndex}>
+  <label class="checkbox">
+    <input
+      type="checkbox"
+      name={name}
+      value={value}
+      checked={checked}
+      disabled={disabled}
+      data-series={seriesIndex}
+    />
+    {label}
+  </label>
+</salary-checkbox>
+
+<script>
+  import type {
+    CheckboxChangeAction,
+    ControlChangeDetail,
+  } from '../../types/control'
+
+  function isCheckboxChangeAction(
+    value: string | null
+  ): value is CheckboxChangeAction {
+    return value === 'calculate-salary' || value === 'toggle-chart-series'
+  }
+
+  class SalaryCheckbox extends HTMLElement {
+    private listeners?: AbortController
+
+    connectedCallback() {
+      const input = this.querySelector<HTMLInputElement>(
+        'input[type="checkbox"]'
+      )
+      const action = this.getAttribute('change-action')
+      const seriesIndexAttribute = this.getAttribute('series-index')
+      const seriesIndex =
+        seriesIndexAttribute === null ? undefined : Number(seriesIndexAttribute)
+
+      if (
+        !input ||
+        !isCheckboxChangeAction(action) ||
+        (action === 'toggle-chart-series' &&
+          (seriesIndex === undefined || !Number.isInteger(seriesIndex)))
+      ) {
+        throw new Error('salary-checkbox requires a checkbox and valid action.')
+      }
+
+      this.listeners?.abort()
+      this.listeners = new AbortController()
+      input.addEventListener(
+        'change',
+        () => {
+          const detail: ControlChangeDetail = {
+            action,
+            name: input.name,
+            value: input.value,
+          }
+          if (action === 'toggle-chart-series') {
+            detail.checked = input.checked
+            detail.seriesIndex = seriesIndex
+          }
+          this.dispatchEvent(
+            new CustomEvent<ControlChangeDetail>('salary-control-change', {
+              bubbles: true,
+              detail,
+            })
+          )
+        },
+        { signal: this.listeners.signal }
+      )
+    }
+
+    disconnectedCallback() {
+      this.listeners?.abort()
+    }
+  }
+
+  if (!customElements.get('salary-checkbox')) {
+    customElements.define('salary-checkbox', SalaryCheckbox)
+  }
+</script>

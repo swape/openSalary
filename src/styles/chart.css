@@ -1,0 +1,35 @@
+.chart-canvas {
+  position: relative;
+  width: 100%;
+  height: clamp(300px, 40vw, 420px);
+}
+
+.chart-filters,
+.chart-controls {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.chart-controls {
+  align-items: end;
+}
+
+.chart-filters salary-checkbox,
+.chart-controls salary-select {
+  flex: 1 1 14rem;
+}
+
+.chart-controls button {
+  width: 3rem;
+  height: 3rem;
+  padding: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0;
+}
+
+.chart-controls .material-symbols-rounded {
+  font-size: 1.5rem;
+}

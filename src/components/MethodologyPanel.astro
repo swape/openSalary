@@ -1,0 +1,53 @@
+---
+interface Props {
+  salaryConfig: typeof import('../config/salary').salaryConfig
+  snapshot: typeof import('../config/salary').snapshot
+}
+
+const { salaryConfig, snapshot } = Astro.props
+---
+
+<section class="panel methodology" aria-labelledby="methodology-title">
+  <h2 id="methodology-title">Metode, kilder og begrensninger</h2>
+  <p>
+    Vi bruker median månedslønn for heltidsansatte, begge kjønn, fra
+    <a href={salaryConfig.sources.salary}>SSB tabell {snapshot.salary.table}</a>, år {snapshot.salary.year}. Månedslønn multipliseres med 12 for en annualisert referanse, ikke
+    observert årsinntekt. Månedslønnen inkluderer bonus og uregelmessige tillegg, men ikke overtid.
+  </p>
+  <p>
+    Frontend er tilordnet nett- og multimediautviklere (2513), Backend og Fullstack programvareutviklere (2512), og DevOps systemadministratorer (2522). Dette er tilnærminger: SSB
+    skiller ikke mellom disse fire rollene. I offentlig sektor bruker vi den bredere gruppen IKT-rådgivere (25) for alle roller, fordi de detaljerte yrkescellene ikke er publisert
+    i datagrunnlaget.
+  </p>
+  <p>
+    Yrkespoeng = median for alle sektorer x 12 / 1 000. Sektorpoeng = (sektormedian - median for alle sektorer) x 12 / 1 000. Summen er nøyaktig sektormedianen x 12, uten
+    dobbelttelling av sektorforskjellen. Forskjellene er beskrivelser av grupper, ikke bevis for at sektor alene bestemmer lønn.
+  </p>
+  <p>
+    Tillegg for karrierenivå, erfaring, utdanning og kompetanser er ikke kalibrert mot SSB. Standardverdiene er scenarioantakelser og kan endres eller settes til 0. Medianen
+    omfatter allerede arbeidstakere med ulik erfaring og utdanning; egne tillegg kan dobbelttelle slike forhold. Bruk dem til å teste en lønnspolitikk, ikke som dokumenterte
+    markedspremier. Næring utover sektor er ikke modellert.
+  </p>
+  <p>
+    Scenario i år n: (referanse + egne tillegg + nye erfaringspoeng x 1 000) x (1 + KPI / 100)<sup>n</sup>. Reallønn er beløpet før denne prisjusteringen. Fremtidig KPI er en
+    konstant, redigerbar antakelse, med
+    <a href={salaryConfig.sources.cpi}>SSB tabell {snapshot.cpi.table}</a>
+    som kilde til siste årsvekst.
+    <a href={salaryConfig.grunnbelop.source}>NAVs grunnbeløp</a> brukes bare som omregningsenhet, ikke som lønnsregel.
+  </p>
+  <p class="hint">
+    SSB-data hentet {snapshot.retrievedAt}; NAV-sats kontrollert
+    {salaryConfig.grunnbelop.retrievedAt}. Lagret datagrunnlag gjør beregningen tilgjengelig uten eksterne forespørsler fra nettleseren. Oppdateringer må kontrolleres og publiseres
+    på nytt. Profilen sendes ikke til en server eller lagres.
+  </p>
+</section>
+
+<style>
+  .methodology {
+    margin-top: 1.5rem;
+  }
+
+  .methodology p {
+    max-width: 85ch;
+  }
+</style>
