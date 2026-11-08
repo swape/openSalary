@@ -10,9 +10,12 @@ const { salaryConfig, snapshot } = Astro.props
 <section class="panel methodology" aria-labelledby="methodology-title">
   <h2 id="methodology-title">Metode, kilder og begrensninger</h2>
   <p>
-    Vi bruker median månedslønn for heltidsansatte, begge kjønn, fra
-    <a href={salaryConfig.sources.salary}>SSB tabell {snapshot.salary.table}</a>, år {snapshot.salary.year}. Månedslønn multipliseres med 12 for en annualisert referanse, ikke
-    observert årsinntekt. Månedslønnen inkluderer bonus og uregelmessige tillegg, men ikke overtid.
+    Vi bruker median månedslønn for heltidsansatte, begge kjønn, fra&nbsp;
+    <a href={salaryConfig.sources.salary} rel="nofollow noreferrer">
+      SSB tabell {snapshot.salary.table}
+    </a>
+    , år {snapshot.salary.year}. Månedslønn multipliseres med 12 for en annualisert referanse, ikke observert årsinntekt. Månedslønnen inkluderer bonus og uregelmessige tillegg,
+    men ikke overtid.
   </p>
   <p>
     Frontend er tilordnet nett- og multimediautviklere (2513), Backend og Fullstack programvareutviklere (2512), og DevOps systemadministratorer (2522). Dette er tilnærminger: SSB
@@ -30,10 +33,15 @@ const { salaryConfig, snapshot } = Astro.props
   </p>
   <p>
     Scenario i år n: (referanse + egne tillegg + nye erfaringspoeng x 1 000) x (1 + KPI / 100)<sup>n</sup>. Reallønn er beløpet før denne prisjusteringen. Fremtidig KPI er en
-    konstant, redigerbar antakelse, med
-    <a href={salaryConfig.sources.cpi}>SSB tabell {snapshot.cpi.table}</a>
-    som kilde til siste årsvekst.
-    <a href={salaryConfig.grunnbelop.source}>NAVs grunnbeløp</a> brukes bare som omregningsenhet, ikke som lønnsregel.
+    konstant, redigerbar antakelse, med&nbsp;
+    <a href={salaryConfig.sources.cpi} rel="nofollow noreferrer">
+      SSB tabell {snapshot.cpi.table}
+    </a>
+    &nbsp;som kilde til siste årsvekst.&nbsp;
+    <a href={salaryConfig.grunnbelop.source} rel="nofollow noreferrer">
+      NAVs grunnbeløp
+    </a>
+    &nbsp; brukes bare som omregningsenhet, ikke som lønnsregel.
   </p>
   <p class="hint">
     SSB-data hentet {snapshot.retrievedAt}; NAV-sats kontrollert
