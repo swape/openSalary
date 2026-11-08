@@ -12,6 +12,7 @@ description: 'Use when creating or changing Astro pages, layouts, components, ro
 - Put server-side data loading and component setup in the frontmatter fence. Keep browser-only behavior in client-side scripts or an explicitly hydrated island.
 - Prefer static rendering for content that does not need a browser runtime. Add the smallest necessary hydration boundary for interactive calculator controls.
 - Use semantic HTML, descriptive page metadata, and accessible labels and feedback in every route.
+- Use `&nbsp;` for intentional non-breaking spaces in Astro markup; avoid JSX expression-based whitespace.
 - Keep data acquisition, salary calculations, and display formatting separate enough to test and explain independently.
 - Follow the repository's strict TypeScript settings and Prettier configuration, including `prettier-plugin-astro`.
 
