@@ -1,25 +1,68 @@
 # openSalary
 
-Calculator for open salary in norway using stats from SSB.
+An open salary scenario calculator for IT professionals in Norway. It combines
+published Statistics Norway (SSB) salary references with transparent, editable
+point premiums, and shows results in gross NOK and G (grunnbeløpet).
 
-Using only data for IT professionals in Norway.
+**SSB supplies the salary references, not the personal premiums.** Career,
+experience, education and skill points are scenario assumptions, not documented
+market effects or a promise of salary growth.
 
-Using data from Statistics Norway (SSB).
+## Getting started
+
+Use Node.js 22.23.4 or newer and npm 9.6.5 or newer, as required by the installed
+Astro version.
+
+```sh
+npm ci
+npm run dev
+```
+
+Open the local URL printed by Astro. For a production build and local preview:
+
+```sh
+npm run build
+npm run preview
+```
+
+The app is built as a static site in `dist/`; it needs no application server,
+database, API keys, or runtime SSB connection. JavaScript is required for
+interactive calculations, tabs and charts. Initial default results and tables
+are rendered into the HTML.
+
+Astro downloads configured Google fonts at development/build time and serves
+them locally. Dependency installation, uncached font downloads and explicit
+SSB refreshes require network access; salary calculations do not.
 
 ## Calculator
 
-Run `npm run dev` to open the Astro app. The calculator supports Frontend,
-Backend, DevOps and Fullstack, career levels, private/state/municipal sectors, experience,
-education, skills, a point breakdown, and future salary charts and tables.
-Results are gross NOK/year, NOK/month and G. Profile data stays in the browser;
-it is not stored or sent to SSB.
+The Norwegian-language interface has “Kalkulator” and “Metodikk” tabs.
+The full-width profile section supports Frontend, Backend, DevOps and Fullstack;
+five career levels; private/state/municipal sectors; experience; education;
+and skills. Results include a point breakdown, salary history, and future
+charts and tables in gross NOK/year, NOK/month and G. Tax and take-home pay
+are not calculated.
+
+The default profile is Backend, Junior, private sector, Bachelor, zero years
+of experience and no selected skills. The default horizon is ten future years.
+Numeric changes and profile selections recalculate automatically; “Beregn lønn”
+also submits the current profile. Invalid entries show an error and hide stale
+results until corrected. Experience accepts whole years from 0 to 60; each
+editable premium accepts 0-1,000 points in steps of 0.1.
+
+Profile values stay in the current page; there is no persistence, account,
+profile export or profile submission to a server. Reloading starts from the
+configured defaults.
 
 The responsive graph uses bundled Chart.js and `chartjs-plugin-zoom`, without
-CDN requests. Checkbox filters show/hide the four series; “Vis år” filters
-history/future. Zoom with the buttons, Ctrl + mouse wheel, or touch pinch;
-Ctrl + drag pans horizontally. “Tilbakestill zoom” restores the selected period.
+CDN requests. It has four series: observed SSB history, extrapolated SSB trend,
+the personal nominal scenario and the personal real-salary scenario.
+Checkbox filters show/hide series; “Vis år” selects all years, history or future.
+The icon buttons zoom in, zoom out and reset, with Norwegian accessible names
+and tooltips. Ctrl + mouse wheel or touch pinch zooms horizontally;
+Ctrl + drag pans horizontally. Reset restores the selected period.
 Changing the salary profile resets zoom but preserves filters. Filters affect
-only the graph, not calculations or the accessible data tables.
+only the graph, not calculations or the data tables below it.
 
 ### Data and methodology
 
@@ -86,51 +129,60 @@ only the graph, not calculations or the accessible data tables.
 
 ### Configuration and updates
 
-Options, limits, role mappings, point value, default premiums, and NAV's G rate
-are in `src/config/salary.ts`. Calculation and formatting are separate helpers;
-shared domain types are in `src/types/salary.ts`.
+| Location | Responsibility |
+| --- | --- |
+| `src/config/salary.ts` | Options, limits, role mappings, point value, defaults and NAV's G rate |
+| `src/config/ssb-snapshot.json` | Checked-in SSB salary history, latest reference and CPI |
+| `src/helpers/calculator.ts` | Validated point breakdown, historical growth and projections |
+| `src/helpers/stringsAndNumbers.ts` | Norwegian number and currency formatting |
+| `src/types/` | Salary model and typed control-change events |
+| `src/pages/index.astro` | Calculator page and browser-side calculation/chart orchestration |
+| `src/components/` | Native form-control wrappers, tabs, methodology and salary tables |
+| `src/layout/NormalLayout.astro`, `src/styles/` | Shared layout, typography, color tokens and chart styling |
+| `astro.config.mjs` | Static-site configuration and locally served fonts, including Material Symbols |
+| `scripts/update-ssb.mjs` | Explicit, validated SSB snapshot refresh |
 
 Run `npm run data:update` to fetch the latest annual salary and CPI snapshot.
-The updater validates dimensions, required cells, numeric values and missing
-data and ten consecutive salary years before writing; errors leave the existing snapshot unchanged.
+The updater validates response columns, required cells, numeric values,
+missing-value markers and ten consecutive salary years before writing.
+It writes to a temporary file and renames it over the snapshot only after
+validation; request or validation errors leave the existing snapshot unchanged.
 SSB's `:` and `.` missing-value markers are stored as `null`; required private
 and broad public references must be published for every year. Review the
 diff, verify the NAV rate manually, update dated documentation if years/rates
 change, and run `npm run check`, `npm test`, and `npm run build` before publishing.
+Some history tests intentionally pin the verified 2016-2025 values and year
+bounds; review those expectations when accepting a newer snapshot.
 The app uses this snapshot offline and does not silently fetch or substitute
 unavailable salary values.
 
 ## Testing
 
-- Run `npm run test:unit` for Vitest unit tests in `src/**/*.test.ts`.
-- Run `npm run test:e2e:install` once to install Chromium, then `npm run test:e2e` for Playwright browser tests.
-- Playwright owns and stops its test server on port 4321; stop an existing dev
-  server on that port before running end-to-end tests. It does not reuse or stop
-  unrelated servers.
-- Run `npm test` to run both test suites, or `npm run test:e2e:ui` to use Playwright's interactive UI.
+```sh
+npm run check
+npm run test:unit
+npm run test:e2e:install
+npm run test:e2e
+npm run build
+```
 
-## plan 
+`check` runs Astro/TypeScript diagnostics. Vitest tests cover calculations,
+premium validation, public-sector references, historical growth and projections.
+Playwright tests cover browser interactions, chart filtering/zoom/pan,
+invalid-input recovery and layout. Browser coverage is currently Chromium only;
+touch-pinch behavior is not covered by the existing suite.
 
-- using point system for calculating open salary based on various categories such as experience, education, and industry
-- each category will be assigned a certain number of points based on its contribution to the overall salary
-- each point is same as ( point * 1000 kr ) added to total salary
-- data from Statistics Norway (SSB) is used to determine the points for each category based on real salary statistics and comparisons
-- rules:
-  - Salary should increase each year with (konsumprisindeks)
-  - Salary should be increase based on all the relevant categories and their respective points
-- all calculations should be transparent and based on publicly available data from SSB
-- all points and calculations should be clearly documented and easy to verify
-- all assumptions and methodologies should be clearly stated and justified
-- the calculator should be easy to use and understand for the general public
-- The calculator should also estimate future salary growth based on the defined rules and categories
-- Graphical representation of salary growth should be provided for better understanding
-- The calculator should allow users to input their own data and see the corresponding salary estimation
-- It should have dropdown with Frontend, Backend, DevOps, and Fullstack options for IT professionals.
-- It should have private or public sector options for IT professionals.
-- It should allow users to input their relevant years of experience.
-- It should allow users to input their education level. (e.g., Bachelor's, Master's, PhD)
-- It should have checkboxes for additional skills or certifications relevant to IT professionals.
-- It should put all the options and calculator constants in a configuration file for easy maintenance and updates
-- Calculate in NOK (Norwegian Krone) and in G (grunnbeløp)
-  
+Playwright starts and stops its own test server on `127.0.0.1:4321`, with
+`reuseExistingServer: false`. If that port is occupied, it refuses to start:
+use a free port in a separate test configuration or stop only your own server.
+It does not reuse or stop unrelated servers.
+
+`npm test` runs both test suites. `npm run test:e2e:ui` opens Playwright's
+interactive UI. `npm run format:check` checks the configured source-file
+formats; `npm run format` rewrites them. These formatting scripts do not include
+Markdown.
+
+## License
+
+MIT; see [LICENSE](LICENSE).
 
